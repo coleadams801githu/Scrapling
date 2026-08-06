@@ -96,6 +96,13 @@ class Spider(ABC):
     retry_backoff_max: float = 60.0
     retry_backoff_jitter: bool = True
 
+    # AutoThrottle settings
+    autothrottle_enabled: bool = False
+    autothrottle_start_delay: float = 5.0
+    autothrottle_max_delay: float = 60.0
+    autothrottle_target_concurrency: Optional[float] = None
+    autothrottle_block_backoff: bool = True
+
     # Fingerprint adjustments
     fp_include_kwargs: bool = False
     fp_keep_fragments: bool = False

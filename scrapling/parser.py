@@ -300,7 +300,9 @@ class Selector(SelectorsGeneration):
 
         ignored_elements: set[Any] = set()
         if ignore_tags:
-            ignored_elements.update(self._root.iter(*ignore_tags))
+            for element in self._root.iter(*ignore_tags):
+                if element not in ignored_elements:
+                    ignored_elements.update(element.iter())
 
         _all_strings = []
 
@@ -315,11 +317,7 @@ class Selector(SelectorsGeneration):
                 return False
 
             owner = parent.getparent() if text_node.is_tail else parent
-            while owner is not None:
-                if owner in ignored_elements:
-                    return False
-                owner = owner.getparent()
-            return True
+            return owner not in ignored_elements
 
         for text_node in cast(list[_ElementUnicodeResult], _find_all_text_nodes(self._root)):
             text = str(text_node)
@@ -519,7 +517,7 @@ class Selector(SelectorsGeneration):
     def relocate(
         self,
         element: Union[Dict, HtmlElement, "Selector"],
-        percentage: int = 0,
+        percentage: int = 40,
         selector_type: bool = False,
     ) -> Union[List[HtmlElement], "Selectors"]:
         """This function will search again for the element in the page tree, used automatically on page structure change
@@ -559,6 +557,10 @@ class Selector(SelectorsGeneration):
                 if not selector_type:
                     return score_table[highest_probability]
                 return self.__elements_convertor(score_table[highest_probability])
+            log.warning(
+                f"Adaptive relocation found no element above the {percentage}% threshold "
+                f"(top score: {highest_probability}%). Lower `percentage` if this is the right element."
+            )
         return []
 
     def css(
@@ -567,7 +569,7 @@ class Selector(SelectorsGeneration):
         identifier: str = "",
         adaptive: bool = False,
         auto_save: bool = False,
-        percentage: int = 0,
+        percentage: int = 40,
     ) -> "Selectors":
         """Search the current tree with CSS3 selectors
 
@@ -627,7 +629,7 @@ class Selector(SelectorsGeneration):
         identifier: str = "",
         adaptive: bool = False,
         auto_save: bool = False,
-        percentage: int = 0,
+        percentage: int = 40,
         **kwargs: Any,
     ) -> "Selectors":
         """Search the current tree with XPath selectors
@@ -667,7 +669,7 @@ class Selector(SelectorsGeneration):
                     element_data = self.retrieve(identifier or selector)
                     if element_data:
                         elements = self.relocate(element_data, percentage)
-                        if elements is not None and auto_save:
+                        if elements and auto_save:
                             self.save(elements[0], identifier or selector)
 
                 return self.__handle_elements(elements)
@@ -987,7 +989,9 @@ class Selector(SelectorsGeneration):
                 SequenceMatcher(None, v, candidate_attributes.get(k, "")).ratio()
                 for k, v in original_attributes.items()
             )
-            checks += len(candidate_attributes)
+            # Using `max` so candidates with extra attributes are penalized and candidates
+            # with fewer attributes don't get inflated scores from a smaller denominator
+            checks += max(len(original_attributes), len(candidate_attributes))
         else:
             if not candidate_attributes:
                 # Both don't have attributes, this must mean something
@@ -1111,7 +1115,7 @@ class Selector(SelectorsGeneration):
 
         possible_targets = cast(List, _find_all_elements_with_spaces(self._root))
         if possible_targets:
-            for node in self.__elements_convertor(possible_targets):
+            for node in map(self.__element_convertor, possible_targets):
                 """Check if element matches given text otherwise, traverse the children tree and iterate"""
                 node_text: TextHandler = node.text
                 if clean_match:
@@ -1173,7 +1177,7 @@ class Selector(SelectorsGeneration):
 
         possible_targets = cast(List, _find_all_elements_with_spaces(self._root))
         if possible_targets:
-            for node in self.__elements_convertor(possible_targets):
+            for node in map(self.__element_convertor, possible_targets):
                 """Check if element matches given regex otherwise, traverse the children tree and iterate"""
                 node_text = node.text
                 if node_text.re(
@@ -1220,7 +1224,7 @@ class Selectors(List[Selector]):
         selector: str,
         identifier: str = "",
         auto_save: bool = False,
-        percentage: int = 0,
+        percentage: int = 40,
         **kwargs: Any,
     ) -> "Selectors":
         """
@@ -1251,7 +1255,7 @@ class Selectors(List[Selector]):
         selector: str,
         identifier: str = "",
         auto_save: bool = False,
-        percentage: int = 0,
+        percentage: int = 40,
     ) -> "Selectors":
         """
         Call the ``.css()`` method for each element in this list and return

@@ -8,7 +8,7 @@ As we will explain later, to automate the page, you need some knowledge of [Play
 You have one primary way to import this Fetcher, which is the same for all fetchers.
 
 ```python
->>> from scrapling.fetchers import DynamicFetcher
+from scrapling.fetchers import DynamicFetcher
 ```
 Check out how to configure the parsing options [here](choosing.md#parser-configuration-in-all-fetchers)
 
@@ -40,6 +40,8 @@ playwright install chrome
 DynamicFetcher.fetch('https://example.com', cdp_url='ws://localhost:9222')
 ```
 Instead of launching a browser locally (Chromium/Google Chrome), you can connect to a remote browser through the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/).
+
+The URL can be a WebSocket endpoint (`ws://`/`wss://`), which is what managed browser providers hand out, or the HTTP endpoint of a browser started with `--remote-debugging-port` (`http://localhost:9222`).
 
 
 **Notes:**
@@ -149,7 +151,7 @@ with DynamicSession(proxy_rotator=rotator, headless=True) as session:
 ### Downloading Files
 
 ```python
-page = DynamicFetcher.fetch('https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/main_cover.png')
+page = DynamicFetcher.fetch('https://raw.githubusercontent.com/D4Vinci/Scrapling/main/docs/assets/main_cover.png')
 
 with open(file='main_cover.png', mode='wb') as f:
     f.write(page.body)
