@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from scrapling.spiders.spider import Spider, SessionConfigurationError, LogCounterHandler, BLOCKED_CODES
+from scrapling.spiders.spider import Spider, SessionConfigurationError, LogCounterHandler, DEFAULT_BLOCKED_CODES
 from scrapling.spiders.request import Request
 from scrapling.spiders.session import SessionManager
 from scrapling.spiders.result import CrawlStats
@@ -149,27 +149,44 @@ class TestLogCounterHandler:
 
 
 class TestBlockedCodes:
-    """Test BLOCKED_CODES constant."""
+    """Test DEFAULT_BLOCKED_CODES constant and Spider.blocked_codes."""
 
     def test_blocked_codes_contains_expected_values(self):
-        """Test that BLOCKED_CODES contains expected HTTP status codes."""
-        assert 401 in BLOCKED_CODES  # Unauthorized
-        assert 403 in BLOCKED_CODES  # Forbidden
-        assert 407 in BLOCKED_CODES  # Proxy Authentication Required
-        assert 429 in BLOCKED_CODES  # Too Many Requests
-        assert 444 in BLOCKED_CODES  # Connection Closed Without Response (nginx)
-        assert 500 in BLOCKED_CODES  # Internal Server Error
-        assert 502 in BLOCKED_CODES  # Bad Gateway
-        assert 503 in BLOCKED_CODES  # Service Unavailable
-        assert 504 in BLOCKED_CODES  # Gateway Timeout
+        """Test that DEFAULT_BLOCKED_CODES contains expected HTTP status codes."""
+        assert 401 in DEFAULT_BLOCKED_CODES  # Unauthorized
+        assert 403 in DEFAULT_BLOCKED_CODES  # Forbidden
+        assert 407 in DEFAULT_BLOCKED_CODES  # Proxy Authentication Required
+        assert 429 in DEFAULT_BLOCKED_CODES  # Too Many Requests
+        assert 444 in DEFAULT_BLOCKED_CODES  # Connection Closed Without Response (nginx)
+        assert 500 in DEFAULT_BLOCKED_CODES  # Internal Server Error
+        assert 502 in DEFAULT_BLOCKED_CODES  # Bad Gateway
+        assert 503 in DEFAULT_BLOCKED_CODES  # Service Unavailable
+        assert 504 in DEFAULT_BLOCKED_CODES  # Gateway Timeout
 
     def test_blocked_codes_does_not_contain_success(self):
         """Test that success codes are not blocked."""
-        assert 200 not in BLOCKED_CODES
-        assert 201 not in BLOCKED_CODES
-        assert 204 not in BLOCKED_CODES
-        assert 301 not in BLOCKED_CODES
-        assert 302 not in BLOCKED_CODES
+        assert 200 not in DEFAULT_BLOCKED_CODES
+        assert 201 not in DEFAULT_BLOCKED_CODES
+        assert 204 not in DEFAULT_BLOCKED_CODES
+        assert 301 not in DEFAULT_BLOCKED_CODES
+        assert 302 not in DEFAULT_BLOCKED_CODES
+
+    def test_spider_uses_default_blocked_codes(self):
+        """Test that a Spider instance defaults to DEFAULT_BLOCKED_CODES."""
+        spider = ConcreteSpider()
+        assert spider.blocked_codes == DEFAULT_BLOCKED_CODES
+
+    def test_spider_allows_custom_blocked_codes(self):
+        """Test that blocked_codes can be overridden per spider class."""
+
+        class CustomCodeSpider(ConcreteSpider):
+            name = "custom_code_spider"
+            blocked_codes = frozenset({403, 429})
+
+        spider = CustomCodeSpider()
+        assert 403 in spider.blocked_codes
+        assert 429 in spider.blocked_codes
+        assert 401 not in spider.blocked_codes
 
 
 class ConcreteSpider(Spider):
@@ -572,3 +589,55 @@ class TestSessionConfigurationError:
         error = SessionConfigurationError("test")
 
         assert isinstance(error, Exception)
+
+
+class TestBlockedRetryBackoff:
+    """Test Spider._blocked_retry_delay() exponential backoff."""
+
+    def test_backoff_increases_with_attempt(self):
+        """Delay should grow with each retry attempt."""
+        spider = ConcreteSpider()
+        spider.retry_backoff_jitter = False  # disable jitter for determinism
+
+        d1 = spider._blocked_retry_delay(1)
+        d2 = spider._blocked_retry_delay(2)
+        d3 = spider._blocked_retry_delay(3)
+
+        assert d1 < d2 < d3
+
+    def test_backoff_capped_at_max(self):
+        """Delay should never exceed retry_backoff_max."""
+        spider = ConcreteSpider()
+        spider.retry_backoff_jitter = False
+        spider.retry_backoff_max = 10.0
+
+        # attempt 100 would be astronomically large uncapped
+        delay = spider._blocked_retry_delay(100)
+        assert delay == 10.0
+
+    def test_backoff_jitter_adds_randomness(self):
+        """With jitter enabled, successive calls should not always be identical."""
+        spider = ConcreteSpider()
+        spider.retry_backoff_jitter = True
+
+        delays = {spider._blocked_retry_delay(3) for _ in range(20)}
+        # With 20 samples including random jitter, we should see > 1 distinct value
+        assert len(delays) > 1
+
+    def test_backoff_no_jitter_is_deterministic(self):
+        """Without jitter, the same attempt always returns the same delay."""
+        spider = ConcreteSpider()
+        spider.retry_backoff_jitter = False
+
+        delays = [spider._blocked_retry_delay(2) for _ in range(10)]
+        assert len(set(delays)) == 1
+
+    def test_backoff_base_respected(self):
+        """Custom retry_backoff_base should scale the delay."""
+        spider = ConcreteSpider()
+        spider.retry_backoff_jitter = False
+        spider.retry_backoff_base = 2.0
+        spider.retry_backoff_max = 1000.0
+
+        # attempt 1: min(1000, 2.0 * 2**1) = 4.0
+        assert spider._blocked_retry_delay(1) == 4.0

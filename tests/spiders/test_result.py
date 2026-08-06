@@ -280,6 +280,66 @@ class TestItemList:
             assert json.loads(lines[0])["line"] == 1
             assert json.loads(lines[1])["line"] == 2
 
+    def test_to_csv_creates_file(self):
+        """Test to_csv creates a CSV file with headers."""
+        items = ItemList()
+        items.append({"name": "Alice", "age": 30})
+        items.append({"name": "Bob", "age": 25})
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "output.csv"
+            items.to_csv(path)
+
+            assert path.exists()
+            lines = path.read_text().splitlines()
+            assert lines[0] == "name,age"
+            assert "Alice" in lines[1]
+            assert "Bob" in lines[2]
+
+    def test_to_csv_custom_fieldnames(self):
+        """Test to_csv respects explicit fieldnames order."""
+        items = ItemList()
+        items.append({"a": 1, "b": 2, "c": 3})
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "output.csv"
+            items.to_csv(path, fieldnames=["c", "a", "b"])
+
+            header = path.read_text().splitlines()[0]
+            assert header == "c,a,b"
+
+    def test_to_csv_custom_delimiter(self):
+        """Test to_csv respects custom delimiter."""
+        items = ItemList()
+        items.append({"x": 1, "y": 2})
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "output.csv"
+            items.to_csv(path, delimiter=";")
+
+            header = path.read_text().splitlines()[0]
+            assert ";" in header
+
+    def test_to_csv_empty_list_no_file_written(self):
+        """Test to_csv with empty list emits a warning and writes no data."""
+        items = ItemList()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "output.csv"
+            items.to_csv(path)
+            # File should not be created for empty list
+            assert not path.exists()
+
+    def test_to_csv_creates_parent_directory(self):
+        """Test to_csv creates parent directories."""
+        items = ItemList()
+        items.append({"k": "v"})
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "nested" / "output.csv"
+            items.to_csv(path)
+            assert path.exists()
+
 
 class TestCrawlStats:
     """Test CrawlStats dataclass."""
@@ -390,6 +450,30 @@ class TestCrawlStats:
         assert stats.custom_stats["my_metric"] == 42
         assert stats.to_dict()["custom_stats"]["my_metric"] == 42
 
+    def test_to_json_creates_file(self):
+        """Test CrawlStats.to_json() writes a valid JSON file."""
+        stats = CrawlStats(items_scraped=7, requests_count=10, start_time=0.0, end_time=2.0)
+        stats.increment_status(200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "stats.json"
+            stats.to_json(path)
+
+            assert path.exists()
+            data = json.loads(path.read_text())
+            assert data["items_scraped"] == 7
+            assert data["requests_count"] == 10
+
+    def test_to_json_with_indent(self):
+        """Test CrawlStats.to_json() pretty-prints when indent=True."""
+        stats = CrawlStats()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "stats.json"
+            stats.to_json(path, indent=True)
+            content = path.read_text()
+            assert "\n" in content
+
 
 class TestCrawlResult:
     """Test CrawlResult dataclass."""
@@ -462,6 +546,41 @@ class TestCrawlResult:
         assert result.stats.requests_count == 100
         assert result.stats.items_scraped == 50
         assert result.stats.requests_per_second == 10.0
+
+    def test_save_report_creates_json(self):
+        """Test CrawlResult.save_report() writes a JSON report."""
+        stats = CrawlStats(items_scraped=3, requests_count=5, start_time=0.0, end_time=1.0)
+        items = ItemList([{"id": i} for i in range(3)])
+        result = CrawlResult(stats=stats, items=items)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "report.json"
+            result.save_report(path)
+
+            assert path.exists()
+            data = json.loads(path.read_text())
+            assert data["items_count"] == 3
+            assert data["items_scraped"] == 3
+            assert data["paused"] is False
+
+    def test_save_report_paused_flag(self):
+        """Test CrawlResult.save_report() records paused state correctly."""
+        result = CrawlResult(stats=CrawlStats(), items=ItemList(), paused=True)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "report.json"
+            result.save_report(path)
+            data = json.loads(path.read_text())
+            assert data["paused"] is True
+
+    def test_save_report_creates_parent_dirs(self):
+        """Test CrawlResult.save_report() creates parent directories."""
+        result = CrawlResult(stats=CrawlStats(), items=ItemList())
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "reports" / "crawl.json"
+            result.save_report(path)
+            assert path.exists()
 
 
 class TestCrawlResultIntegration:

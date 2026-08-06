@@ -1,3 +1,4 @@
+import random
 import signal
 import logging
 from pathlib import Path
@@ -13,7 +14,8 @@ from scrapling.core.utils import set_logger, reset_logger
 from scrapling.spiders.result import CrawlResult, CrawlStats
 from scrapling.core._types import Set, Any, Dict, Optional, Union, TYPE_CHECKING, AsyncGenerator
 
-BLOCKED_CODES = {401, 403, 407, 429, 444, 500, 502, 503, 504}
+DEFAULT_BLOCKED_CODES: frozenset[int] = frozenset({401, 403, 407, 429, 444, 500, 502, 503, 504})
+
 if TYPE_CHECKING:
     from scrapling.engines.toolbelt.custom import Response
 
@@ -84,6 +86,15 @@ class Spider(ABC):
     concurrent_requests_per_domain: int = 0
     download_delay: float = 0.0
     max_blocked_retries: int = 3
+
+    # Blocked-response detection
+    blocked_codes: frozenset[int] = DEFAULT_BLOCKED_CODES
+
+    # Exponential backoff for blocked retries.
+    # Retry delay = min(retry_backoff_max, retry_backoff_base * 2 ** attempt) + random jitter.
+    retry_backoff_base: float = 1.0
+    retry_backoff_max: float = 60.0
+    retry_backoff_jitter: bool = True
 
     # AutoThrottle settings
     autothrottle_enabled: bool = False
@@ -203,13 +214,24 @@ class Spider(ABC):
 
     async def is_blocked(self, response: "Response") -> bool:
         """Check if the response is blocked. Users should override this for custom detection logic."""
-        if response.status in BLOCKED_CODES:
+        if response.status in self.blocked_codes:
             return True
         return False
 
     async def retry_blocked_request(self, request: Request, response: "Response") -> Request:
         """Users should override this to prepare the blocked request before retrying, if needed."""
         return request
+
+    def _blocked_retry_delay(self, attempt: int) -> float:
+        """Return the number of seconds to wait before the *attempt*-th retry.
+
+        Uses exponential backoff capped at ``retry_backoff_max``, with optional
+        uniform random jitter of up to half the computed delay.
+        """
+        delay = min(self.retry_backoff_max, self.retry_backoff_base * (2 ** attempt))
+        if self.retry_backoff_jitter:
+            delay += random.uniform(0, delay / 2)
+        return delay
 
     def __repr__(self) -> str:
         """String representation of the spider."""
