@@ -171,6 +171,11 @@ class CrawlerEngine:
 
     async def _process_request(self, request: Request) -> None:
         """Download and process a single request."""
+        # Apply exponential backoff delay for retried blocked requests.
+        backoff_delay = request.meta.pop("_backoff_delay", None)
+        if backoff_delay:
+            await anyio.sleep(backoff_delay)
+
         if self._robots_manager:
             can_fetch = await self._robots_manager.can_fetch(request.url, request.sid)
             if not can_fetch:
@@ -221,16 +226,23 @@ class CrawlerEngine:
             if request._retry_count < self.spider.max_blocked_retries:
                 retry_request = request.copy()
                 retry_request._retry_count += 1
-                retry_request.priority -= 1  # Don't retry immediately
                 retry_request.dont_filter = True
                 retry_request._session_kwargs.pop("proxy", None)
                 retry_request._session_kwargs.pop("proxies", None)
+
+                backoff = self.spider._blocked_retry_delay(retry_request._retry_count)
+                # Encode the backoff as a negative priority offset so the scheduler
+                # deprioritises the request relative to fresh work.  The actual
+                # sleep happens below after dequeueing.
+                retry_request.priority -= int(backoff) + 1
+                retry_request.meta["_backoff_delay"] = backoff
 
                 new_request = await self.spider.retry_blocked_request(retry_request, response)
                 self._normalize_request(new_request)
                 await self.scheduler.enqueue(new_request)
                 log.info(
-                    f"Scheduled blocked request for retry ({retry_request._retry_count}/{self.spider.max_blocked_retries}): {request.url}"
+                    f"Scheduled blocked request for retry ({retry_request._retry_count}/{self.spider.max_blocked_retries})"
+                    f" with {backoff:.1f}s backoff: {request.url}"
                 )
             else:
                 log.warning(f"Max retries exceeded for blocked request: {request.url}")

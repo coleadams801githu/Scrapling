@@ -1,5 +1,6 @@
 from pathlib import Path
 from dataclasses import dataclass, field
+import csv as _csv
 
 import orjson
 
@@ -35,6 +36,35 @@ class ItemList(list):
             for item in self:
                 f.write(orjson.dumps(item, option=orjson.OPT_SERIALIZE_NUMPY))
                 f.write(b"\n")
+        log.info("Saved %d items to %s", len(self), path)
+
+    def to_csv(self, path: Union[str, Path], *, fieldnames: List[str] | None = None, delimiter: str = ","):
+        """Export items to a CSV file.
+
+        The column order follows *fieldnames* when supplied, otherwise it is
+        derived from the union of all keys across all items (in insertion order).
+
+        :param path: Path to the output file
+        :param fieldnames: Explicit list of column names.  Missing values are
+            written as empty strings.
+        :param delimiter: Field delimiter character (default ``','``).
+        """
+        if not self:
+            log.warning("No items to write to %s", path)
+            return
+
+        if fieldnames is None:
+            seen: dict[str, None] = {}
+            for item in self:
+                seen.update(dict.fromkeys(item.keys()))
+            fieldnames = list(seen)
+
+        file = Path(path)
+        file.parent.mkdir(parents=True, exist_ok=True)
+        with file.open("w", newline="", encoding="utf-8") as f:
+            writer = _csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(self)
         log.info("Saved %d items to %s", len(self), path)
 
 
@@ -110,6 +140,21 @@ class CrawlStats:
             "log_count": self.log_levels_counter,
         }
 
+    def to_json(self, path: Union[str, Path], *, indent: bool = False) -> None:
+        """Export crawl statistics to a JSON file.
+
+        :param path: Path to the output file
+        :param indent: Pretty-print with 2-space indentation
+        """
+        options = orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NON_STR_KEYS
+        if indent:
+            options |= orjson.OPT_INDENT_2
+
+        file = Path(path)
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(orjson.dumps(self.to_dict(), option=options))
+        log.info("Saved crawl stats to %s", path)
+
 
 @dataclass
 class CrawlResult:
@@ -129,3 +174,28 @@ class CrawlResult:
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
         return iter(self.items)
+
+    def save_report(self, path: Union[str, Path], *, indent: bool = True) -> None:
+        """Write a JSON report combining crawl stats and basic item summary.
+
+        The report is a single JSON object containing the full stats dict plus
+        a top-level ``"paused"`` flag and ``"items_count"`` field for quick
+        inspection without needing to load the full items list.
+
+        :param path: Path to the output file
+        :param indent: Pretty-print with 2-space indentation (default ``True``)
+        """
+        options = orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NON_STR_KEYS
+        if indent:
+            options |= orjson.OPT_INDENT_2
+
+        report = {
+            "paused": self.paused,
+            "items_count": len(self.items),
+            **self.stats.to_dict(),
+        }
+
+        file = Path(path)
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(orjson.dumps(report, option=options))
+        log.info("Saved crawl report to %s", path)
