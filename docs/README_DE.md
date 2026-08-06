@@ -16,6 +16,8 @@
         <img alt="Tests" src="https://github.com/D4Vinci/Scrapling/actions/workflows/tests.yml/badge.svg"></a>
     <a href="https://badge.fury.io/py/Scrapling" alt="PyPI version">
         <img alt="PyPI version" src="https://badge.fury.io/py/Scrapling.svg"></a>
+    <a href="https://hub.docker.com/r/pyd4vinci/scrapling" target="_blank">
+        <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/pyd4vinci/scrapling?labelColor=%20%23FDB062&logo=Docker&labelColor=%20%23528bff"></a>
     <a href="https://clickpy.clickhouse.com/dashboard/scrapling" rel="nofollow"><img src="https://img.shields.io/pypi/dm/scrapling" alt="PyPI package downloads"></a>
     <a href="https://github.com/D4Vinci/Scrapling/tree/main/agent-skill" alt="AI Agent Skill directory">
         <img alt="Static Badge" src="https://img.shields.io/badge/Skill-black?style=flat&label=Agent&link=https%3A%2F%2Fgithub.com%2FD4Vinci%2FScrapling%2Ftree%2Fmain%2Fagent-skill"></a>
@@ -85,6 +87,34 @@ MySpider().start()
 <table>
   <tr>
     <td width="200">
+      <a href="https://go.nodemaven.com/scraplingjuly" target="_blank" title="Proxies with the Highest IP Scores">
+        <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/NodeMaven.jpg" width="240" height="100">
+      </a>
+    </td>
+    <td>
+    <a href="https://go.nodemaven.com/scraplingjuly" target="_blank">NodeMaven</a> - zuverlässiger Proxy-Anbieter mit der höchsten IP-Qualität auf dem Markt. Nutze den Promo-Code SCRAPLING35 für 35% Rabatt auf Proxys.
+    </td>
+  </tr>
+  <tr>
+    <td width="200">
+      <a href="https://proxidize.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=scrapling&utm_content=d4vinci" target="_blank" title="Clean Proxies with No Nonsense.">
+        <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/proxidize.png">
+      </a>
+    </td>
+    <td> <a href="https://proxidize.com/?utm_source=github&utm_medium=sponsorship&utm_campaign=scrapling&utm_content=d4vinci" target="_blank"><b>Proxidize</b></a> bietet mobile und Residential-Proxies für Scraping, Browser-Automatisierung, SEO-Monitoring, KI-Agenten und Datenerfassung. <i>Mit dem Code <b>scrapling20</b> erhalten Sie 20% Rabatt</i>.
+    </td>
+  </tr>
+  <tr>
+    <td width="200">
+      <a href="https://coldproxy.com/?utm_source=scrapling&utm_medium=github&utm_campaign=coldproxy&utm_content=platinum_sponsor" target="_blank" title="Residential, IPv6 & Datacenter Proxies for Web Scraping">
+        <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/coldproxy.png">
+      </a>
+    </td>
+    <td> <a href="https://coldproxy.com/?utm_source=scrapling&utm_medium=github&utm_campaign=coldproxy&utm_content=platinum_sponsor" target="_blank"><b>ColdProxy</b></a> bietet Residential- und Datacenter-Proxies für stabiles Web Scraping, öffentliche Datenerfassung und geografisch gezielte Tests in über 195 Ländern.
+    </td>
+  </tr>
+  <tr>
+    <td width="200">
       <a href="https://hypersolutions.co/?utm_source=github&utm_medium=readme&utm_campaign=scrapling" target="_blank" title="Bot Protection Bypass API for Akamai, DataDome, Incapsula & Kasada">
         <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/HyperSolutions.png">
       </a>
@@ -92,18 +122,6 @@ MySpider().start()
     <td> Scrapling bewältigt Cloudflare Turnstile. Für Schutz auf Unternehmensebene bietet <a href="https://hypersolutions.co?utm_source=github&utm_medium=readme&utm_campaign=scrapling">
         <b>Hyper Solutions</b>
       </a> API-Endpunkte, die gültige Antibot-Tokens für <b>Akamai</b>, <b>DataDome</b>, <b>Kasada</b> und <b>Incapsula</b> generieren. Einfache API-Aufrufe, keine Browser-Automatisierung nötig. </td>
-  </tr>
-  <tr>
-    <td width="200">
-      <a href="https://birdproxies.com/t/scrapling" target="_blank" title="At Bird Proxies, we eliminate your pains such as banned IPs, geo restriction, and high costs so you can focus on your work.">
-        <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/BirdProxies.jpg">
-      </a>
-    </td>
-    <td>Hey, wir haben <a href="https://birdproxies.com/t/scrapling">
-        <b>BirdProxies</b>
-      </a> gebaut, weil Proxies nicht kompliziert oder überteuert sein sollten. <br /> Schnelle Residential- und ISP-Proxies in über 195 Standorten, faire Preise und echter Support. <br />
-      <b>Probieren Sie unser FlappyBird-Spiel auf der Landingpage für kostenlose Daten!</b>
-    </td>
   </tr>
   <tr>
     <td width="200">
@@ -130,16 +148,6 @@ MySpider().start()
   </tr>
   <tr>
     <td width="200">
-      <a href="https://www.nsocks.com/?keyword=2p67aivg" target="_blank" title="Scalable Web Data Access for AI Applications">
-        <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/nsocks.png">
-      </a>
-    </td>
-    <td>
-    <a href="https://www.nsocks.com/?keyword=2p67aivg" target="_blank">Nsocks</a> bietet schnelle Residential- und ISP-Proxies für Entwickler und Scraper. Globale IP-Abdeckung, hohe Anonymität, intelligente Rotation und zuverlässige Leistung für Automatisierung und Datenextraktion. Verwenden Sie <a href="https://www.xcrawl.com/?keyword=2p67aivg" target="_blank">Xcrawl</a>, um großflächiges Web-Crawling zu vereinfachen.
-    </td>
-  </tr>
-  <tr>
-    <td width="200">
       <a href="https://petrosky.io/d4vinci" target="_blank" title="PetroSky delivers cutting-edge VPS hosting.">
         <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/petrosky.png">
       </a>
@@ -161,16 +169,6 @@ MySpider().start()
   </tr>
   <tr>
     <td width="200">
-      <a href="http://mangoproxy.com/?utm_source=D4Vinci&utm_medium=GitHub&utm_campaign=D4Vinci" target="_blank" title="Proxies You Can Rely On: Residential, Server, and Mobile">
-        <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/MangoProxy.png">
-      </a>
-    </td>
-    <td>
-    <a href="http://mangoproxy.com/?utm_source=D4Vinci&utm_medium=GitHub&utm_campaign=D4Vinci" target="_blank">Stabile Proxys</a> für Scraping, Automatisierung und Multi-Accounting. Saubere IPs, schnelle Reaktionszeiten und zuverlässige Leistung unter Last. Entwickelt für skalierbare Workflows.
-    </td>
-  </tr>
-  <tr>
-    <td width="200">
       <a href="https://www.swiftproxy.net/?ref=D4Vinci" target="_blank" title="Scalable Solutions for Web Data Access">
         <img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/SwiftProxy.png">
       </a>
@@ -185,7 +183,9 @@ MySpider().start()
 # Sponsoren
 
 <!-- sponsors -->
-<a href="https://www.crawleo.dev/?utm_source=github&utm_medium=sponsor&utm_campaign=scrapling" target="_blank" title="Supercharge your AI with Real-Time Web Intelligence"><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/crawleo.png"></a>
+
+<a href="https://www.novada.com/?d4vinci-scrapling" target="_blank" title="The All-in-One Solution for Every Data Scraping Scenario"><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/novada.jpg"></a>
+
 <br/>
 
 <a href="https://serpapi.com/?utm_source=scrapling" target="_blank" title="Scrape Google and other search engines with SerpApi"><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/SerpApi.png"></a>
@@ -193,9 +193,7 @@ MySpider().start()
 <a href="https://hasdata.com/?utm_source=github&utm_medium=banner&utm_campaign=D4Vinci" target="_blank" title="The web scraping service that actually beats anti-bot systems!"><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/hasdata.png"></a>
 <a href="https://proxyempire.io/?ref=scrapling&utm_source=scrapling" target="_blank" title="Collect The Data Your Project Needs with the Best Residential Proxies"><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/ProxyEmpire.png"></a>
 <a href="https://www.webshare.io/?referral_code=48r2m2cd5uz1" target="_blank" title="The Most Reliable Proxy with Unparalleled Performance"><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/webshare.png"></a>
-<a href="https://www.rapidproxy.io/?ref=d4v" target="_blank" title="Affordable Access to the Proxy World – bypass CAPTCHAs blocks, and avoid additional costs."><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/rapidproxy.jpg"></a>
-<a href="https://www.ipfoxy.com/?r=scrapling" target="_blank" title="Unlock the Full Potential of Global Business with IPFoxy's High-Quality Rotating and Dedicated Proxy Services."><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/IPFoxy.jpg"></a>
-<a href="https://www.ipcook.com/?ref=EAENO9&utm_source=github&utm_medium=referral&utm_campaign=d4vinci_scrapling" target="_blank" title="Fast Proxies. Smart Pricing. Premium Performance."><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/IPCook.png"></a>
+<a href="https://proxiware.com/?ref=scrapling" target="_blank" title="Collect Any Data. At Any Scale."><img src="https://raw.githubusercontent.com/D4Vinci/Scrapling/main/images/proxiware.png"></a>
 
 
 <!-- /sponsors -->
@@ -213,9 +211,12 @@ MySpider().start()
 - 💾 **Pause & Resume**: Checkpoint-basierte Crawl-Persistenz. Drücken Sie Strg+C für ein kontrolliertes Herunterfahren; starten Sie neu, um dort fortzufahren, wo Sie aufgehört haben.
 - 📡 **Streaming-Modus**: Gescrapte Elemente in Echtzeit streamen über `async for item in spider.stream()` mit Echtzeit-Statistiken -- ideal für UI, Pipelines und lang laufende Crawls.
 - 🛡️ **Erkennung blockierter Anfragen**: Automatische Erkennung und Wiederholung blockierter Anfragen mit anpassbarer Logik.
+- 🚦 **AutoThrottle**: Schluss mit dem Raten von Verzögerungen. Der Spider stimmt die Verzögerung jeder Domain selbst darauf ab, wie schnell die Website antwortet, verdoppelt sie (oder wartet, was `Retry-After` verlangt), sobald die Website Sie blockiert oder ausbremst, und wird wieder schneller, sobald das aufhört.
 - 🤖 **robots.txt-Konformität**: Optionales `robots_txt_obey`-Flag, das `Disallow`-, `Crawl-delay`- und `Request-rate`-Direktiven mit domainbasiertem Caching respektiert.
 - 🧪 **Entwicklungsmodus**: Antworten beim ersten Lauf auf der Festplatte zwischenspeichern und bei weiteren Läufen erneut abspielen - iterieren Sie an Ihrer `parse()`-Logik, ohne die Zielserver erneut abzufragen.
-- 📦 **Integrierter Export**: Ergebnisse über Hooks und Ihre eigene Pipeline oder den integrierten JSON/JSONL-Export mit `result.items.to_json()` / `result.items.to_jsonl()` exportieren.
+- 🧩 **Fertige Spider-Vorlagen**: Sparen Sie sich den Boilerplate-Code mit `CrawlSpider` für regelbasiertes Link-Following, `SitemapSpider` für Sitemap-/robots.txt-gesteuerte Crawls und `ShopifySpider`, um über die JSON-API jedes Produkt aus einem beliebigen Shopify-Shop zu ziehen -- ein Item pro Variante.
+- 🔗 **Link-Extraktion**: Ein eigenständiges `LinkExtractor`-Primitiv mit Allow-/Deny-Mustern, Domain-Filtern, CSS-/XPath-Eingrenzung, Erweiterungsfilterung und Kanonisierung -- nutzbar innerhalb der Vorlagen oder für sich allein.
+- 📦 **Integrierter Export**: Ergebnisse über Hooks und Ihre eigene Pipeline oder die integrierten JSON/JSONL/CSV/XML-Exporte mit `result.items.to_json()`, `to_jsonl()`, `to_csv()` und `to_xml()` exportieren.
 
 ### Erweitertes Website-Abrufen mit Session-Unterstützung
 - **HTTP-Anfragen**: Schnelle und heimliche HTTP-Anfragen mit der `Fetcher`-Klasse. Kann Browser-TLS-Fingerprints und Header imitieren und HTTP/3 verwenden.
@@ -225,13 +226,16 @@ MySpider().start()
 - **Proxy-Rotation**: Integrierter `ProxyRotator` mit zyklischen oder benutzerdefinierten Rotationsstrategien über alle Session-Typen hinweg, plus Proxy-Überschreibungen pro Anfrage.
 - **Domain- & Werbeblockierung**: Anfragen an bestimmte Domains (und deren Subdomains) blockieren oder die integrierte Werbeblockierung (~3.500 bekannte Werbe-/Tracker-Domains) in browserbasierten Fetchern aktivieren.
 - **DNS-Leak-Prävention**: Optionale DNS-over-HTTPS-Unterstützung zur Weiterleitung von DNS-Anfragen über Cloudflares DoH, um DNS-Leaks bei der Verwendung von Proxys zu verhindern.
+- **Remote-Browser**: Statt lokal einen Browser zu starten, verbinden Sie sich per CDP mit `cdp_url` zu einem bereits laufenden Browser -- auf demselben Rechner, einem anderen Host oder bei einem Managed-Browser-Anbieter. Mit `executable_path` können Sie jeden Browser-Fetcher außerdem auf Ihren eigenen Chromium-Build verweisen.
+- **Hintergrund-API-Erfassung**: Übergeben Sie ein URL-Muster an `capture_xhr`, und alle passenden XHR-/Fetch-Antworten, die die Seite beim Laden erzeugt, werden als `Response`-Objekte in `response.captured_xhr` gesammelt -- so kommen Sie an die API-Daten einer Website, ohne die Requests selbst zu rekonstruieren.
 - **Async-Unterstützung**: Vollständige async-Unterstützung über alle Fetcher und dedizierte async Session-Klassen hinweg.
 
 ### Adaptives Scraping & KI-Integration
 - 🔄 **Intelligente Element-Verfolgung**: Elemente nach Website-Änderungen mit intelligenten Ähnlichkeitsalgorithmen neu lokalisieren.
 - 🎯 **Intelligente flexible Auswahl**: CSS-Selektoren, XPath-Selektoren, filterbasierte Suche, Textsuche, Regex-Suche und mehr.
 - 🔍 **Ähnliche Elemente finden**: Elemente, die gefundenen Elementen ähnlich sind, automatisch lokalisieren.
-- 🤖 **MCP-Server für die Verwendung mit KI**: Integrierter MCP-Server für KI-unterstütztes Web Scraping und Datenextraktion. Der MCP-Server verfügt über leistungsstarke, benutzerdefinierte Funktionen, die Scrapling nutzen, um gezielten Inhalt zu extrahieren, bevor er an die KI (Claude/Cursor/etc.) übergeben wird, wodurch Vorgänge beschleunigt und Kosten durch Minimierung der Token-Nutzung gesenkt werden. ([Demo-Video](https://www.youtube.com/watch?v=qyFk3ZNwOxE))
+- 🤖 **MCP-Server für die Verwendung mit KI**: Integrierter MCP-Server für KI-unterstütztes Web Scraping und Datenextraktion. Der MCP-Server verfügt über leistungsstarke, benutzerdefinierte Funktionen, die Scrapling nutzen, um gezielten Inhalt zu extrahieren, bevor er an die KI (Claude/Cursor/etc.) übergeben wird, wodurch Vorgänge beschleunigt und Kosten durch Minimierung der Token-Nutzung gesenkt werden. ([Demo-Video](https://www.youtube.com/watch?v=qyFk3ZNwOxE)) Er kann außerdem Browser-Sitzungen über mehrere Aufrufe hinweg offen halten, Screenshots von Seiten aufnehmen und Remote-Browser über CDP steuern.
+- 🧠 **Agent Skill**: Ein installationsfertiger [Agent Skill](https://github.com/D4Vinci/Scrapling/tree/main/agent-skill), der Coding-Agents die gesamte Bibliothek beibringt, damit der Code, den sie mit Scrapling schreiben, zur aktuellen API passt, statt geraten zu werden.
 
 ### Hochleistungs- und praxiserprobte Architektur
 - 🚀 **Blitzschnell**: Optimierte Leistung, die die meisten Python-Scraping-Bibliotheken übertrifft.
@@ -246,6 +250,7 @@ MySpider().start()
 - 🧬 **Verbesserte Textverarbeitung**: Integrierte Regex, Bereinigungsmethoden und optimierte String-Operationen.
 - 📝 **Automatische Selektorgenerierung**: Robuste CSS/XPath-Selektoren für jedes Element generieren.
 - 🔌 **Vertraute API**: Ähnlich wie Scrapy/BeautifulSoup mit denselben Pseudo-Elementen, die in Scrapy/Parsel verwendet werden.
+- 🤝 **Nahtlose Scrapy-Integration**: Sie setzen bereits auf Scrapy? Versehen Sie einen beliebigen Callback mit `scrapling_response`, um die ohnehin abgerufenen Responses mit Scraplings Parser zu verarbeiten -- ganz ohne Umschreiben.
 - 📘 **Vollständige Typabdeckung**: Vollständige Type Hints für hervorragende IDE-Unterstützung und Code-Vervollständigung. Die gesamte Codebasis wird bei jeder Änderung automatisch mit **PyRight** und **MyPy** gescannt.
 - 🔋 **Fertiges Docker-Image**: Mit jeder Veröffentlichung wird automatisch ein Docker-Image erstellt und gepusht, das alle Browser enthält.
 
@@ -343,6 +348,16 @@ QuotesSpider(crawldir="./crawl_data").start()
 ```
 Drücken Sie Strg+C, um kontrolliert zu pausieren -- der Fortschritt wird automatisch gespeichert. Wenn Sie den Spider später erneut starten, übergeben Sie dasselbe `crawldir`, und er setzt dort fort, wo er aufgehört hat.
 
+Oder überspringen Sie das Schreiben der Crawling-Logik komplett mit den fertigen Vorlagen, etwa um den gesamten Katalog eines Shopify-Shops abzurufen:
+```python
+from scrapling.spiders import ShopifySpider
+
+class MyStore(ShopifySpider):
+    target_website = "example.com"
+
+result = MyStore().start()  # Jedes Produkt im Shop, ein Item pro Variante
+```
+
 ### Erweitertes Parsing & Navigation
 ```python
 from scrapling.fetchers import Fetcher
@@ -432,14 +447,14 @@ Scrapling ist nicht nur leistungsstark -- es ist auch blitzschnell. Die folgende
 
 | # |    Bibliothek     | Zeit (ms) | vs Scrapling |
 |---|:-----------------:|:---------:|:------------:|
-| 1 |     Scrapling     |   2.02    |     1.0x     |
-| 2 |   Parsel/Scrapy   |   2.04    |     1.01     |
-| 3 |     Raw Lxml      |   2.54    |    1.257     |
-| 4 |      PyQuery      |   24.17   |     ~12x     |
-| 5 |    Selectolax     |   82.63   |     ~41x     |
-| 6 |  MechanicalSoup   |  1549.71  |   ~767.1x    |
-| 7 |   BS4 with Lxml   |  1584.31  |   ~784.3x    |
-| 8 | BS4 with html5lib |  3391.91  |   ~1679.1x   |
+| 1 |     Scrapling     |   1.98    |     1.0x     |
+| 2 |   Parsel/Scrapy   |   1.99    |    1.005     |
+| 3 |     Raw Lxml      |   2.48    |    1.253     |
+| 4 |      PyQuery      |   23.15   |     ~12x     |
+| 5 |    Selectolax     |  196.09   |     ~99x     |
+| 6 |  MechanicalSoup   |  1531.24  |   ~773.4x    |
+| 7 |   BS4 with Lxml   |  1535.19  |   ~775.3x    |
+| 8 | BS4 with html5lib |  3388.16  |   ~1711.2x   |
 
 
 ### Element-Ähnlichkeit & Textsuche-Leistung
@@ -448,8 +463,8 @@ Scraplings adaptive Element-Finding-Fähigkeiten übertreffen Alternativen deutl
 
 | Bibliothek  | Zeit (ms) | vs Scrapling |
 |-------------|:---------:|:------------:|
-| Scrapling   |   2.39    |     1.0x     |
-| AutoScraper |   12.45   |    5.209x    |
+| Scrapling   |   2.29    |     1.0x     |
+| AutoScraper |   12.46   |    5.441x    |
 
 
 > Alle Benchmarks stellen Durchschnittswerte von über 100 Durchläufen dar. Siehe [benchmarks.py](https://github.com/D4Vinci/Scrapling/blob/main/benchmarks.py) für die Methodik.
@@ -462,7 +477,8 @@ Scrapling erfordert Python 3.10 oder höher:
 pip install scrapling
 ```
 
-Diese Installation enthält nur die Parser-Engine und ihre Abhängigkeiten, ohne Fetcher oder Kommandozeilenabhängigkeiten.
+> [!IMPORTANT]
+> Diese Installation enthält nur die Parser-Engine und ihre Abhängigkeiten, ohne Fetcher oder Kommandozeilenabhängigkeiten. Daher führt der Import von allem aus `scrapling.fetchers` oder `scrapling.spiders`, wie in den Beispielen oben, mit dieser Installation allein zu einem `ModuleNotFoundError`. Wenn Sie einen der Fetcher oder Spider verwenden möchten, installieren Sie zuerst die Fetcher-Abhängigkeiten wie unten gezeigt.
 
 ### Optionale Abhängigkeiten
 
