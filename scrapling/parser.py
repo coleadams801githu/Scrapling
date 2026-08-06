@@ -2,7 +2,7 @@ from pathlib import Path
 from inspect import signature
 from urllib.parse import urljoin
 from difflib import SequenceMatcher
-from re import Pattern as re_Pattern
+from re import IGNORECASE, UNICODE, Pattern as re_Pattern, compile as re_compile
 
 from lxml.html import HtmlElement, HTMLParser
 from cssselect import SelectorError, SelectorSyntaxError, parse as split_selectors
@@ -1115,20 +1115,24 @@ class Selector(SelectorsGeneration):
 
         possible_targets = cast(List, _find_all_elements_with_spaces(self._root))
         if possible_targets:
-            for node in map(self.__element_convertor, possible_targets):
+            for element in possible_targets:
                 """Check if element matches given text otherwise, traverse the children tree and iterate"""
-                node_text: TextHandler = node.text
+                node_text = TextHandler(element.text or "")
                 if clean_match:
                     node_text = TextHandler(node_text.clean())
 
                 if not case_sensitive:
                     node_text = TextHandler(node_text.lower())
 
+                matched = False
                 if partial:
                     if text in node_text:
-                        results.append(node)
+                        matched = True
                 elif text == node_text:
-                    results.append(node)
+                    matched = True
+
+                if matched:
+                    results.append(self.__element_convertor(element))
 
                 if first_match and results:
                     # we got an element so we should stop
@@ -1177,16 +1181,19 @@ class Selector(SelectorsGeneration):
 
         possible_targets = cast(List, _find_all_elements_with_spaces(self._root))
         if possible_targets:
-            for node in map(self.__element_convertor, possible_targets):
+            if isinstance(query, str):
+                query = re_compile(query, UNICODE if case_sensitive else UNICODE | IGNORECASE)
+
+            for element in possible_targets:
                 """Check if element matches given regex otherwise, traverse the children tree and iterate"""
-                node_text = node.text
+                node_text = TextHandler(element.text or "")
                 if node_text.re(
                     query,
                     check_match=True,
                     clean_match=clean_match,
                     case_sensitive=case_sensitive,
                 ):
-                    results.append(node)
+                    results.append(self.__element_convertor(element))
 
                 if first_match and results:
                     # we got an element so we should stop

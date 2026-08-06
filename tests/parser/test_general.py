@@ -118,6 +118,40 @@ class TestXPathSelectors:
 
 # Text Matching Tests
 class TestTextMatching:
+    def test_text_search_wraps_only_matching_elements(self, page, monkeypatch):
+        """Text searches should not allocate Selector wrappers for rejected candidates."""
+        original_converter = Selector._Selector__element_convertor
+        conversions = 0
+
+        def counting_converter(instance, element):
+            nonlocal conversions
+            conversions += 1
+            return original_converter(instance, element)
+
+        monkeypatch.setattr(Selector, "_Selector__element_convertor", counting_converter)
+
+        stock_info = page.find_by_text(r"In stock:", partial=True, first_match=False)
+
+        assert len(stock_info) == 2
+        assert conversions == len(stock_info)
+
+    def test_regex_search_wraps_only_matching_elements(self, page, monkeypatch):
+        """Regex searches should reuse their pattern and wrap matches only."""
+        original_converter = Selector._Selector__element_convertor
+        conversions = 0
+
+        def counting_converter(instance, element):
+            nonlocal conversions
+            conversions += 1
+            return original_converter(instance, element)
+
+        monkeypatch.setattr(Selector, "_Selector__element_convertor", counting_converter)
+
+        stock_info = page.find_by_regex(r"In stock: \d+", first_match=False)
+
+        assert len(stock_info) == 2
+        assert conversions == len(stock_info)
+
     def test_regex_multiple_matches(self, page):
         """Test finding multiple matches with regex"""
         stock_info = page.find_by_regex(r"In stock: \d+", first_match=False)
