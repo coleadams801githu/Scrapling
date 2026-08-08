@@ -94,6 +94,15 @@ shell = [
 all = [
     "scrapling[ai,shell]",
 ]
+radar = [
+    "scrapling[fetchers]",
+    "sqlalchemy>=2.0",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "apscheduler>=3.10",
+    "pydantic[email]>=2.0",
+    "python-dotenv>=1.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/D4Vinci/Scrapling"
@@ -106,6 +115,7 @@ Repository = "https://github.com/D4Vinci/Scrapling"
 
 [project.scripts]
 scrapling = "scrapling.cli:main"
+radar = "resell_radar.cli:main"
 
 [tool.setuptools]
 zip-safe = false
@@ -113,7 +123,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["scrapling*"]
+include = ["scrapling*", "resell_radar*"]
 
 [tool.mypy]
 python_version = "3.10"
