@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from resell_radar.models import Alert, AlertCondition, PriceSnapshot, User
-from resell_radar.scrapers import ScrapedItem, get_scraper_for_url
+from resell_radar.scrapers import ScrapedItem, ScraperError, get_scraper_for_url
 
 
 # --------------------------------------------------------------------------- CRUD
@@ -33,8 +33,6 @@ def create_alert(
     item_name: str | None = None,
 ) -> Alert:
     """Create a new price alert."""
-    from resell_radar.scrapers import get_scraper_for_url, ScraperError
-
     try:
         scraper = get_scraper_for_url(url)
         platform = scraper.platform

@@ -1,6 +1,8 @@
 """FastAPI REST API for Resell Radar — Replit / server compatible."""
 from __future__ import annotations
 
+import os
+
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -23,11 +25,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Resell Radar API", version="0.1.0", lifespan=lifespan)
+_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
+    allow_credentials=False,
 )
 
 
@@ -140,7 +149,7 @@ def get_alert_endpoint(alert_id: int, db: Session = Depends(get_db)):
 @app.patch("/alerts/{alert_id}", response_model=AlertOut)
 def update_alert_endpoint(alert_id: int, body: AlertUpdate, db: Session = Depends(get_db)):
     from resell_radar.alerts import update_alert
-    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    fields = body.model_dump(exclude_unset=True)
     alert = update_alert(db, alert_id, **fields)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")

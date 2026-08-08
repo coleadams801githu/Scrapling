@@ -9,7 +9,8 @@ from resell_radar.scrapers.base import BaseScraper, ScrapedItem
 
 logger = logging.getLogger(__name__)
 
-_SKU_RE = re.compile(r"/furniture/[^/]+/[^/]+/([^/?#]+)")
+_CATEGORIES = r"(?:furniture|fashion|jewelry|art|decorative-objects|lighting|silver|ceramics|rugs|vintage)"
+_SKU_RE = re.compile(rf"/{_CATEGORIES}/[^/]+/([^/?#]+)")
 _API_BASE = "https://www.1stdibs.com/api/furniture/item/"
 
 

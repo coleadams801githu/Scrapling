@@ -41,7 +41,7 @@ class GrailedScraper(BaseScraper):
 
         listing = data.get("listing", data)
         price_cents = listing.get("price_cents") or listing.get("price")
-        price = price_cents / 100 if price_cents and price_cents > 1000 else price_cents
+        price = price_cents / 100 if price_cents else price_cents
         title = listing.get("title")
         sold = listing.get("sold") or listing.get("sold_at") is not None
         availability = "sold" if sold else "active"
