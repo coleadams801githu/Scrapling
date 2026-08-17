@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 from resell_radar.scrapers.base import BaseScraper, ScrapedItem, ScraperError
+from resell_radar.scrapers.depop import DepopScraper
 from resell_radar.scrapers.ebay import EbayScraper
+from resell_radar.scrapers.goat import GoatScraper
 from resell_radar.scrapers.grailed import GrailedScraper
 from resell_radar.scrapers.istdibs import IstdibsScraper
 from resell_radar.scrapers.poshmark import PoshmarkScraper
+from resell_radar.scrapers.stockx import StockXScraper
 from resell_radar.scrapers.therealreal import TheRealRealScraper
 from resell_radar.scrapers.vestiaire import VestiaireScraper
 
@@ -13,10 +16,13 @@ __all__ = [
     "BaseScraper",
     "ScrapedItem",
     "ScraperError",
+    "DepopScraper",
     "EbayScraper",
+    "GoatScraper",
     "GrailedScraper",
     "IstdibsScraper",
     "PoshmarkScraper",
+    "StockXScraper",
     "TheRealRealScraper",
     "VestiaireScraper",
     "get_scraper_for_url",
@@ -24,19 +30,25 @@ __all__ = [
 ]
 
 PLATFORM_MAP: dict[str, type[BaseScraper]] = {
+    "depop": DepopScraper,
     "ebay": EbayScraper,
+    "goat": GoatScraper,
     "grailed": GrailedScraper,
     "istdibs": IstdibsScraper,
     "poshmark": PoshmarkScraper,
+    "stockx": StockXScraper,
     "therealreal": TheRealRealScraper,
     "vestiaire": VestiaireScraper,
 }
 
 _URL_PATTERNS: list[tuple[str, str]] = [
+    ("depop.com", "depop"),
     ("ebay.com", "ebay"),
+    ("goat.com", "goat"),
     ("grailed.com", "grailed"),
     ("1stdibs.com", "istdibs"),
     ("poshmark.com", "poshmark"),
+    ("stockx.com", "stockx"),
     ("therealreal.com", "therealreal"),
     ("vestiairecollective.com", "vestiaire"),
 ]

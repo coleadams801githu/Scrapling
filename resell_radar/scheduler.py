@@ -53,7 +53,15 @@ def run_scheduler(interval_minutes: int = 15) -> None:
     def _refresh_jobs() -> None:
         with get_db() as db:
             alerts: list[Alert] = db.query(Alert).filter(Alert.is_active.is_(True)).all()
+            active_job_ids = {f"alert_{a.id}" for a in alerts}
             existing_job_ids = {job.id for job in scheduler.get_jobs()}
+
+            # Remove jobs for alerts that are no longer active or have been deleted
+            for job_id in existing_job_ids:
+                if job_id.startswith("alert_") and job_id not in active_job_ids:
+                    scheduler.remove_job(job_id)
+                    logger.info("[scheduler] removed job %s (alert inactive/deleted)", job_id)
+
             for alert in alerts:
                 job_id = f"alert_{alert.id}"
                 minutes = max(alert.check_interval_minutes, 1)
