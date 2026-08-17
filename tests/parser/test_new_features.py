@@ -273,7 +273,8 @@ class TestAnalyze:
         info = Selector(analyze_html, url="https://example.com/test").analyze()
         assert "links" in info
         assert any("/internal" in u for u in info["links"]["internal"])
-        assert any("external.example.com" in u for u in info["links"]["external"])
+        ext_urls = info["links"]["external"]
+        assert any(u == "https://external.example.com/page" for u in ext_urls)
 
     def test_images(self, analyze_html):
         info = Selector(analyze_html, url="https://example.com/test").analyze()
