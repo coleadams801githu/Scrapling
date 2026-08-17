@@ -1,6 +1,7 @@
+import re as _re
 from pathlib import Path
 from inspect import signature
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
 from difflib import SequenceMatcher
 from re import Pattern as re_Pattern
 
@@ -1192,6 +1193,433 @@ class Selector(SelectorsGeneration):
                 return results[0]
         return results
 
+    # ------------------------------------------------------------------ #
+    # Pagination detection
+    # ------------------------------------------------------------------ #
+    def get_pagination_urls(self) -> List[str]:
+        """Detect and return all pagination-related URLs found on the current page.
+
+        The method looks for:
+
+        * ``<link rel="next">`` / ``<link rel="prev">`` header links.
+        * Anchor tags whose visible text (or aria-label) looks like a "next" or numbered
+          pagination control (e.g. "next", "›", "»", "2", "3" …).
+        * Any ``<nav>`` / ``<div>`` / ``<ul>`` element whose *class* or *id* contains
+          the word "paginat" or "pager", then collects all ``<a href>`` children.
+        * URL query-string patterns: when the current ``self.url`` already contains a
+          ``page`` / ``p`` / ``pg`` / ``offset`` parameter the method also appends the
+          next logical URL (incrementing that parameter by one).
+
+        Relative URLs are resolved against ``self.url`` when it is set.
+
+        :return: A deduplicated list of absolute (or root-relative) pagination URLs,
+                 in the order they were discovered.
+        """
+        if self._is_text_node(self._root):
+            return []
+
+        seen: Set[str] = set()
+        results: List[str] = []
+
+        def _add(href: Optional[str]) -> None:
+            if not href:
+                return
+            href = href.strip()
+            if href in ("#", "javascript:void(0)", "javascript:;", ""):
+                return
+            resolved = urljoin(self.url, href) if self.url else href
+            if resolved not in seen:
+                seen.add(resolved)
+                results.append(resolved)
+
+        # 1. <link rel="next"> / <link rel="prev">
+        for link in _find_all_elements(self._root):
+            tag = getattr(link, "tag", None)
+            if tag == "link":
+                rel = (link.attrib.get("rel") or "").lower()
+                if "next" in rel or "prev" in rel:
+                    _add(link.attrib.get("href"))
+
+        # 2. Anchor tags that look like pagination controls
+        _NEXT_RE = _re.compile(
+            r"^\s*(next|›|»|→|forward|older|more|\d+)\s*$",
+            _re.IGNORECASE,
+        )
+        for anchor in _find_all_elements(self._root):
+            if getattr(anchor, "tag", None) != "a":
+                continue
+            href = anchor.attrib.get("href")
+            if not href:
+                continue
+            # Check visible text or aria-label
+            texts = anchor.xpath(".//text()") or []
+            visible = " ".join(t.strip() for t in texts if t.strip())
+            aria = anchor.attrib.get("aria-label") or ""
+            label = (visible or aria).strip()
+            if _NEXT_RE.match(label):
+                _add(href)
+
+        # 3. <nav|div|ul> with pagination-related class / id
+        _PAGER_RE = _re.compile(r"paginat|pager", _re.IGNORECASE)
+        for el in _find_all_elements(self._root):
+            tag = getattr(el, "tag", None)
+            if tag not in ("nav", "div", "ul", "ol", "section"):
+                continue
+            cls = el.attrib.get("class") or ""
+            eid = el.attrib.get("id") or ""
+            if _PAGER_RE.search(cls) or _PAGER_RE.search(eid):
+                for child in el.iter("a"):
+                    _add(child.attrib.get("href"))
+
+        # 4. Derive next-page URL from the current URL's query string
+        if self.url:
+            parsed = urlparse(self.url)
+            qs = parse_qs(parsed.query, keep_blank_values=True)
+            for param in ("page", "p", "pg", "offset", "start"):
+                if param in qs:
+                    try:
+                        current_val = int(qs[param][0])
+                    except (ValueError, IndexError):
+                        continue
+                    new_qs = dict(qs)
+                    new_qs[param] = [str(current_val + 1)]
+                    next_url = urlunparse(parsed._replace(query=urlencode(new_qs, doseq=True)))
+                    _add(next_url)
+                    break
+
+        return results
+
+    # ------------------------------------------------------------------ #
+    # Schema / structured-data extraction
+    # ------------------------------------------------------------------ #
+    def get_schemas(self) -> Dict[str, Any]:
+        """Extract all structured data schemas embedded in the page and return them as a
+        dictionary with the following top-level keys (each key is omitted when no data
+        was found):
+
+        * ``"json_ld"`` – list of parsed ``<script type="application/ld+json">`` blocks.
+        * ``"open_graph"`` – dict of Open Graph ``<meta property="og:*">`` values.
+        * ``"twitter_card"`` – dict of Twitter Card ``<meta name="twitter:*">`` values.
+        * ``"microdata"`` – list of microdata items (``itemscope`` / ``itemprop``).
+
+        :return: A plain Python dictionary.
+        """
+        if self._is_text_node(self._root):
+            return {}
+
+        schemas: Dict[str, Any] = {}
+
+        # --- JSON-LD ---
+        from orjson import loads as _json_loads, JSONDecodeError as _JSONDecodeError
+
+        json_ld_blocks: List[Any] = []
+        for script in _find_all_elements(self._root):
+            if getattr(script, "tag", None) != "script":
+                continue
+            stype = (script.attrib.get("type") or "").strip().lower()
+            if stype == "application/ld+json":
+                raw = (script.text_content() if hasattr(script, "text_content") else (script.text or "")).strip()
+                if raw:
+                    try:
+                        parsed = _json_loads(raw)
+                        json_ld_blocks.append(parsed)
+                    except (_JSONDecodeError, Exception):
+                        pass
+        if json_ld_blocks:
+            schemas["json_ld"] = json_ld_blocks
+
+        # --- Open Graph & Twitter Card ---
+        og: Dict[str, str] = {}
+        tw: Dict[str, str] = {}
+        for meta in _find_all_elements(self._root):
+            if getattr(meta, "tag", None) != "meta":
+                continue
+            prop = meta.attrib.get("property") or ""
+            name = meta.attrib.get("name") or ""
+            content = meta.attrib.get("content") or ""
+            if prop.lower().startswith("og:"):
+                og[prop[3:]] = content
+            elif name.lower().startswith("twitter:"):
+                tw[name[8:]] = content
+        if og:
+            schemas["open_graph"] = og
+        if tw:
+            schemas["twitter_card"] = tw
+
+        # --- Microdata ---
+        def _collect_microdata(el: HtmlElement) -> Dict[str, Any]:
+            item: Dict[str, Any] = {}
+            item_type = el.attrib.get("itemtype") or ""
+            if item_type:
+                item["@type"] = item_type
+            props: Dict[str, Any] = {}
+            for child in el.iter():
+                if child is el:
+                    continue
+                # Stop descending into nested items
+                if "itemscope" in child.attrib and child is not el:
+                    prop_name = child.attrib.get("itemprop")
+                    if prop_name:
+                        nested = _collect_microdata(child)
+                        existing = props.get(prop_name)
+                        if existing is None:
+                            props[prop_name] = nested
+                        elif isinstance(existing, list):
+                            existing.append(nested)
+                        else:
+                            props[prop_name] = [existing, nested]
+                    continue
+                itemprop = child.attrib.get("itemprop")
+                if not itemprop:
+                    continue
+                # Extract the most meaningful value
+                tag = child.tag
+                if tag == "a":
+                    value = child.attrib.get("href") or child.text_content().strip()
+                elif tag == "img":
+                    value = child.attrib.get("src") or ""
+                elif tag == "meta":
+                    value = child.attrib.get("content") or ""
+                elif tag == "time":
+                    value = child.attrib.get("datetime") or child.text_content().strip()
+                elif tag == "link":
+                    value = child.attrib.get("href") or ""
+                else:
+                    value = child.text_content().strip() if hasattr(child, "text_content") else (child.text or "")
+                existing = props.get(itemprop)
+                if existing is None:
+                    props[itemprop] = value
+                elif isinstance(existing, list):
+                    existing.append(value)
+                else:
+                    props[itemprop] = [existing, value]
+            if props:
+                item["properties"] = props
+            return item
+
+        microdata_items: List[Dict[str, Any]] = []
+        # Only look at top-level itemscope elements (not nested ones)
+        for el in _find_all_elements(self._root):
+            if "itemscope" not in el.attrib:
+                continue
+            parent = el.getparent()
+            if parent is not None and "itemscope" in parent.attrib:
+                continue
+            microdata_items.append(_collect_microdata(el))
+        if microdata_items:
+            schemas["microdata"] = microdata_items
+
+        return schemas
+
+    # ------------------------------------------------------------------ #
+    # Page analyzer
+    # ------------------------------------------------------------------ #
+    def analyze(self) -> Dict[str, Any]:
+        """Analyse the page through its meta-elements and return what was learned.
+
+        The returned dictionary may contain the following keys (each is omitted when
+        the information is absent from the page):
+
+        * ``"title"`` – the ``<title>`` tag text.
+        * ``"description"`` – ``<meta name="description">`` content.
+        * ``"keywords"`` – ``<meta name="keywords">`` as a list of strings.
+        * ``"author"`` – ``<meta name="author">`` content.
+        * ``"language"`` – ``lang`` attribute of the ``<html>`` element.
+        * ``"canonical"`` – ``<link rel="canonical">`` href.
+        * ``"robots"`` – ``<meta name="robots">`` content.
+        * ``"viewport"`` – ``<meta name="viewport">`` content.
+        * ``"charset"`` – character encoding declared via ``<meta charset>`` or
+          ``<meta http-equiv="Content-Type">``.
+        * ``"published_at"`` – first ``datetime`` attribute found in a ``<time>`` tag,
+          or article-specific meta tags.
+        * ``"modified_at"`` – ``article:modified_time`` Open Graph value.
+        * ``"open_graph"`` – dict of all ``og:*`` meta properties (keys without the
+          ``og:`` prefix).
+        * ``"twitter_card"`` – dict of all ``twitter:*`` meta names.
+        * ``"schemas"`` – structured data from :meth:`get_schemas` (JSON-LD, microdata).
+        * ``"links"`` – dict with ``"internal"`` and ``"external"`` lists of unique
+          absolute URLs found in ``<a href>`` tags (requires ``self.url`` to be set for
+          the internal/external split to work; otherwise all go to ``"external"``).
+        * ``"images"`` – list of unique absolute ``src`` URLs from ``<img>`` tags.
+        * ``"feeds"`` – list of RSS / Atom feed URLs from ``<link>`` tags.
+        * ``"word_count"`` – approximate visible word count of the page body.
+
+        :return: A plain Python dictionary.
+        """
+        if self._is_text_node(self._root):
+            return {}
+
+        info: Dict[str, Any] = {}
+
+        # Helpers
+        def _meta(name_or_prop: str, by: str = "name") -> Optional[str]:
+            """Fetch the content of a single <meta> tag."""
+            for m in _find_all_elements(self._root):
+                if getattr(m, "tag", None) != "meta":
+                    continue
+                if (m.attrib.get(by) or "").lower() == name_or_prop.lower():
+                    return m.attrib.get("content") or None
+            return None
+
+        # Title
+        for el in _find_all_elements(self._root):
+            if getattr(el, "tag", None) == "title":
+                raw = el.text_content().strip() if hasattr(el, "text_content") else (el.text or "")
+                if raw:
+                    info["title"] = raw
+                break
+
+        # Basic meta tags
+        for key, attr_name, attr_val in (
+            ("description", "name", "description"),
+            ("author", "name", "author"),
+            ("robots", "name", "robots"),
+            ("viewport", "name", "viewport"),
+        ):
+            val = _meta(attr_val, attr_name)
+            if val:
+                info[key] = val
+
+        # Keywords → list
+        kw = _meta("keywords")
+        if kw:
+            info["keywords"] = [k.strip() for k in kw.split(",") if k.strip()]
+
+        # Charset
+        for m in _find_all_elements(self._root):
+            if getattr(m, "tag", None) != "meta":
+                continue
+            if m.attrib.get("charset"):
+                info["charset"] = m.attrib["charset"]
+                break
+            http_equiv = (m.attrib.get("http-equiv") or "").lower()
+            if http_equiv == "content-type":
+                content = m.attrib.get("content") or ""
+                if "charset=" in content.lower():
+                    info["charset"] = content.lower().split("charset=")[-1].strip()
+                    break
+
+        # Language
+        html_el = self._root
+        while html_el.getparent() is not None:
+            html_el = html_el.getparent()
+        lang = html_el.attrib.get("lang") or html_el.attrib.get("xml:lang")
+        if lang:
+            info["language"] = lang
+
+        # Canonical
+        for el in _find_all_elements(self._root):
+            if getattr(el, "tag", None) == "link":
+                rel = (el.attrib.get("rel") or "").lower()
+                if "canonical" in rel:
+                    href = el.attrib.get("href")
+                    if href:
+                        info["canonical"] = urljoin(self.url, href) if self.url else href
+                    break
+
+        # Published / modified dates
+        for el in _find_all_elements(self._root):
+            if getattr(el, "tag", None) == "time":
+                dt = el.attrib.get("datetime")
+                if dt and "published_at" not in info:
+                    info["published_at"] = dt
+                    break
+
+        pub_meta = (
+            _meta("article:published_time", "property")
+            or _meta("datePublished", "name")
+            or _meta("pubdate", "name")
+        )
+        if pub_meta and "published_at" not in info:
+            info["published_at"] = pub_meta
+
+        mod_meta = _meta("article:modified_time", "property") or _meta("dateModified", "name")
+        if mod_meta:
+            info["modified_at"] = mod_meta
+
+        # Open Graph
+        og: Dict[str, str] = {}
+        tw: Dict[str, str] = {}
+        for m in _find_all_elements(self._root):
+            if getattr(m, "tag", None) != "meta":
+                continue
+            prop = m.attrib.get("property") or ""
+            name = m.attrib.get("name") or ""
+            content = m.attrib.get("content") or ""
+            if prop.lower().startswith("og:"):
+                og[prop[3:]] = content
+            elif name.lower().startswith("twitter:"):
+                tw[name[8:]] = content
+        if og:
+            info["open_graph"] = og
+        if tw:
+            info["twitter_card"] = tw
+
+        # Structured data
+        schemas = self.get_schemas()
+        if schemas:
+            info["schemas"] = schemas
+
+        # Links (internal vs external)
+        base_netloc = urlparse(self.url).netloc if self.url else ""
+        internal_links: List[str] = []
+        external_links: List[str] = []
+        seen_links: Set[str] = set()
+        for el in _find_all_elements(self._root):
+            if getattr(el, "tag", None) != "a":
+                continue
+            href = (el.attrib.get("href") or "").strip()
+            if not href or href.startswith(("javascript:", "#", "mailto:", "tel:")):
+                continue
+            resolved = urljoin(self.url, href) if self.url else href
+            if resolved in seen_links:
+                continue
+            seen_links.add(resolved)
+            if base_netloc and urlparse(resolved).netloc == base_netloc:
+                internal_links.append(resolved)
+            else:
+                external_links.append(resolved)
+        if internal_links or external_links:
+            info["links"] = {"internal": internal_links, "external": external_links}
+
+        # Images
+        images: List[str] = []
+        seen_imgs: Set[str] = set()
+        for el in _find_all_elements(self._root):
+            if getattr(el, "tag", None) != "img":
+                continue
+            src = (el.attrib.get("src") or "").strip()
+            if not src:
+                continue
+            resolved_src = urljoin(self.url, src) if self.url else src
+            if resolved_src not in seen_imgs:
+                seen_imgs.add(resolved_src)
+                images.append(resolved_src)
+        if images:
+            info["images"] = images
+
+        # Feeds (RSS/Atom)
+        feeds: List[str] = []
+        _FEED_TYPES = {"application/rss+xml", "application/atom+xml", "application/feed+json"}
+        for el in _find_all_elements(self._root):
+            if getattr(el, "tag", None) != "link":
+                continue
+            ltype = (el.attrib.get("type") or "").lower().strip()
+            if ltype in _FEED_TYPES:
+                href = el.attrib.get("href") or ""
+                if href:
+                    feeds.append(urljoin(self.url, href) if self.url else href)
+        if feeds:
+            info["feeds"] = feeds
+
+        # Approximate word count (visible text only)
+        all_text_nodes: List = _find_all_text_nodes(self._root)
+        word_count = sum(len(_re.split(r"\s+", t.strip())) for t in all_text_nodes if t.strip())
+        if word_count:
+            info["word_count"] = word_count
+
+        return info
+
 
 class Selectors(List[Selector]):
     """
@@ -1366,6 +1794,137 @@ class Selectors(List[Selector]):
     def length(self) -> int:
         """Returns the length of the current list"""
         return len(self)
+
+    def generate_regex(
+        self,
+        attribute: Optional[str] = None,
+        flags: int = 0,
+    ) -> str:
+        """Generate a regular expression that matches the values of the chosen
+        *attribute* (or the visible text when *attribute* is ``None``) across all
+        elements in this collection.
+
+        The algorithm works by:
+
+        1. Collecting the raw string value from every element.
+        2. Finding the longest common *prefix* and *suffix* shared by all values
+           and escaping them for use in a regex.
+        3. Inspecting each variable middle segment and replacing it with the
+           narrowest character-class pattern that covers all observed characters:
+
+           * Only digits → ``\\d+``
+           * Only word characters (letters / digits / underscore) → ``\\w+``
+           * Otherwise → ``.+``
+
+        4. Returning the assembled pattern as a string.
+
+        Example usage::
+
+            page = Selector('<ul><li><a href="/p/1">one</a></li>'
+                            '<li><a href="/p/42">two</a></li></ul>')
+            pattern = page.css('a').generate_regex('href')
+            # '/p/\\\\d+'  →  matches '/p/1', '/p/42', etc.
+
+        :param attribute: The element attribute to read (e.g. ``"href"``, ``"src"``).
+            Pass ``None`` to use the element's visible text instead.
+        :param flags: Optional ``re`` flags (e.g. ``re.IGNORECASE``) compiled into
+            the returned pattern string as an inline flag group when non-zero.
+        :return: A regex pattern string, or an empty string when the collection is
+            empty or all values are empty.
+        :raises ValueError: When only one distinct value is found – a regex that
+            literally matches a single string is almost certainly not what the
+            caller wants.
+        """
+        if not self:
+            return ""
+
+        # Collect values
+        values: List[str] = []
+        for element in self:
+            if attribute is not None:
+                val = str(element.attrib.get(attribute) or "")
+            else:
+                val = str(element.text or "")
+            values.append(val)
+
+        # Drop blank values – they'd make prefix/suffix "" for everything
+        non_empty = [v for v in values if v]
+        if not non_empty:
+            return ""
+
+        if len(set(non_empty)) == 1:
+            raise ValueError(
+                "All elements share the exact same value; a generated regex would "
+                "only match that one literal string, which is most likely unintended. "
+                "Pass the value to re.escape() directly if that is what you want."
+            )
+
+        # Longest common prefix
+        def _common_prefix(strings: List[str]) -> str:
+            prefix = strings[0]
+            for s in strings[1:]:
+                while not s.startswith(prefix):
+                    prefix = prefix[:-1]
+                    if not prefix:
+                        return ""
+            return prefix
+
+        # Longest common suffix (work on reversed strings)
+        def _common_suffix(strings: List[str]) -> str:
+            rev = [s[::-1] for s in strings]
+            return _common_prefix(rev)[::-1]
+
+        prefix = _common_prefix(non_empty)
+        suffix = _common_suffix(non_empty)
+
+        # Make sure prefix + suffix don't overlap (short strings)
+        for v in non_empty:
+            middle_len = len(v) - len(prefix) - len(suffix)
+            if middle_len < 0:
+                # Overlap detected – trim suffix to avoid it
+                suffix = suffix[abs(middle_len):]
+                break
+
+        # Build middle pattern from the variable segments
+        middles = [v[len(prefix): len(v) - len(suffix) if suffix else len(v)] for v in non_empty]
+
+        def _classify(segment: str) -> str:
+            if not segment:
+                return ""
+            if _re.fullmatch(r"\d+", segment):
+                return r"\d+"
+            if _re.fullmatch(r"\w+", segment):
+                return r"\w+"
+            return ".+"
+
+        middle_patterns = {_classify(m) for m in middles if m}
+        # Pick the broadest pattern so it covers all variants
+        if ".+" in middle_patterns:
+            middle_pat = ".+"
+        elif r"\w+" in middle_patterns:
+            middle_pat = r"\w+"
+        elif r"\d+" in middle_patterns:
+            middle_pat = r"\d+"
+        else:
+            middle_pat = ".*"
+
+        escaped_prefix = _re.escape(prefix)
+        escaped_suffix = _re.escape(suffix)
+        pattern = f"{escaped_prefix}{middle_pat}{escaped_suffix}"
+
+        if flags:
+            # Encode flags as an inline (?...) group for portability
+            flag_chars = ""
+            if flags & _re.IGNORECASE:
+                flag_chars += "i"
+            if flags & _re.MULTILINE:
+                flag_chars += "m"
+            if flags & _re.DOTALL:
+                flag_chars += "s"
+            if flag_chars:
+                pattern = f"(?{flag_chars}){pattern}"
+
+        return pattern
 
     def __getstate__(self) -> Any:  # pragma: no cover
         # lxml don't like it :)
