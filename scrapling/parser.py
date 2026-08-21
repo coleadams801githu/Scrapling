@@ -570,6 +570,7 @@ class Selector(SelectorsGeneration):
         adaptive: bool = False,
         auto_save: bool = False,
         percentage: int = 40,
+        first_only: bool = False,
     ) -> "Selectors":
         """Search the current tree with CSS3 selectors
 
@@ -601,6 +602,7 @@ class Selector(SelectorsGeneration):
                     adaptive,
                     auto_save,
                     percentage,
+                    first_only=first_only,
                 )
 
             results = Selectors()
@@ -614,6 +616,7 @@ class Selector(SelectorsGeneration):
                     adaptive,
                     auto_save,
                     percentage,
+                    first_only=first_only,
                 )
 
             return Selectors(results)
@@ -630,6 +633,7 @@ class Selector(SelectorsGeneration):
         adaptive: bool = False,
         auto_save: bool = False,
         percentage: int = 40,
+        first_only: bool = False,
         **kwargs: Any,
     ) -> "Selectors":
         """Search the current tree with XPath selectors
@@ -655,7 +659,8 @@ class Selector(SelectorsGeneration):
             return Selectors()
 
         try:
-            if elements := self._root.xpath(selector, **kwargs):
+            query = f"({selector})[1]" if first_only else selector
+            if elements := self._root.xpath(query, **kwargs):
                 if not self.__adaptive_enabled and auto_save:
                     log.warning(
                         "Argument `auto_save` will be ignored because `adaptive` wasn't enabled on initialization. Check docs for more info."
@@ -707,6 +712,7 @@ class Selector(SelectorsGeneration):
         if self._is_text_node(self._root):
             return Selectors()
 
+        first_only = bool(kwargs.pop("_first_only", False))
         if not args and not kwargs:
             raise TypeError("You have to pass something to search with, like tag name(s), tag attributes, or both.")
 
@@ -767,7 +773,7 @@ class Selector(SelectorsGeneration):
                 selectors.append(selector)
 
         if selectors:
-            results = cast(Selectors, self.css(", ".join(selectors)))
+            results = cast(Selectors, self.css(", ".join(selectors), first_only=first_only and not patterns and not functions))
             if results:
                 # From the results, get the ones that fulfill passed regex patterns
                 for pattern in patterns:
@@ -785,7 +791,7 @@ class Selector(SelectorsGeneration):
             for function in functions:
                 results = results.filter(function)
 
-        return results
+        return results[:1] if first_only else results
 
     def find(
         self,
@@ -798,7 +804,7 @@ class Selector(SelectorsGeneration):
         :param kwargs: The attributes you want to filter elements based on it.
         :return: The `Selector` object of the element or `None` if the result didn't match
         """
-        for element in self.find_all(*args, **kwargs):
+        for element in self.find_all(*args, _first_only=True, **kwargs):
             return element
         return None
 
