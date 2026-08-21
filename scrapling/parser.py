@@ -212,17 +212,50 @@ class Selector(SelectorsGeneration):
         # Faster than checking `element.is_attribute or element.is_text or element.is_tail`
         return issubclass(type(element), _ElementUnicodeResult)
 
+    @staticmethod
+    def __from_root(
+        root: HtmlElement | _ElementUnicodeResult,
+        url: str,
+        encoding: str,
+        adaptive: bool,
+        storage: Optional[StorageSystemMixin],
+        keep_comments: bool,
+        keep_cdata: bool,
+        huge_tree: bool,
+    ) -> "Selector":
+        """Wrap an already-parsed root without repeating public constructor work."""
+        selector = object.__new__(Selector)
+        selector.url = url
+        selector._raw_body = ""
+        selector.encoding = encoding
+        selector.__keep_cdata = keep_cdata
+        selector.__huge_tree_enabled = huge_tree
+        selector.__keep_comments = keep_comments
+        selector.__text = None
+        selector.__attributes = None
+        selector.__tag = None
+        selector._root = root
+
+        if Selector._is_text_node(root):
+            selector.__adaptive_enabled = False
+            selector._storage = None
+        else:
+            selector.__adaptive_enabled = bool(adaptive)
+            selector._storage = storage if selector.__adaptive_enabled else None
+
+        return selector
+
     def __element_convertor(self, element: HtmlElement | _ElementUnicodeResult) -> "Selector":
         """Used internally to convert a single HtmlElement or text node to Selector directly without checks"""
-        return Selector(
-            root=element,
-            url=self.url,
-            encoding=self.encoding,
-            adaptive=self.__adaptive_enabled,
-            _storage=self._storage,
-            keep_comments=self.__keep_comments,
-            keep_cdata=self.__keep_cdata,
-            huge_tree=self.__huge_tree_enabled,
+        return self.__from_root(
+            element,
+            self.url,
+            self.encoding,
+            self.__adaptive_enabled,
+            self._storage,
+            self.__keep_comments,
+            self.__keep_cdata,
+            self.__huge_tree_enabled,
         )
 
     def __elements_convertor(self, elements: List[HtmlElement | _ElementUnicodeResult]) -> "Selectors":
@@ -234,17 +267,18 @@ class Selector(SelectorsGeneration):
         comments = self.__keep_comments
         cdata = self.__keep_cdata
         huge_tree = self.__huge_tree_enabled
+        from_root = self.__from_root
 
         return Selectors(
-            Selector(
-                root=el,
-                url=url,
-                encoding=encoding,
-                adaptive=adaptive,
-                _storage=storage,
-                keep_comments=comments,
-                keep_cdata=cdata,
-                huge_tree=huge_tree,
+            from_root(
+                el,
+                url,
+                encoding,
+                adaptive,
+                storage,
+                comments,
+                cdata,
+                huge_tree,
             )
             for el in elements
         )
