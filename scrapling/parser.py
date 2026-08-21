@@ -2,7 +2,7 @@ from pathlib import Path
 from inspect import signature
 from urllib.parse import urljoin
 from difflib import SequenceMatcher
-from re import IGNORECASE, UNICODE, Pattern as re_Pattern, compile as re_compile
+from re import IGNORECASE, UNICODE, Pattern as re_Pattern, compile as re_compile, error as re_error
 
 from lxml.html import HtmlElement, HTMLParser
 from cssselect import SelectorError, SelectorSyntaxError, parse as split_selectors
@@ -59,6 +59,15 @@ _find_all_elements_with_spaces = XPath(
     ".//*[normalize-space(text())]"
 )  # This selector gets all elements with text content
 _find_all_text_nodes = XPath(".//text()")
+
+
+def _iter_elements_with_text(root: HtmlElement) -> Generator[HtmlElement, None, None]:
+    """Yield descendants with matchable direct text in document order."""
+    for element in root.iterdescendants():
+        # Search matching reads element.text, not descendant tails. Skipping
+        # non-elements and empty direct text avoids candidates that cannot match.
+        if isinstance(element.tag, str) and element.text and element.text.strip(" \t\r\n"):
+            yield element
 
 
 class Selector(SelectorsGeneration):
@@ -1119,34 +1128,27 @@ class Selector(SelectorsGeneration):
         if not case_sensitive:
             text = text.lower()
 
-        possible_targets = cast(List, _find_all_elements_with_spaces(self._root))
-        if possible_targets:
-            for element in possible_targets:
-                """Check if element matches given text otherwise, traverse the children tree and iterate"""
-                node_text = TextHandler(element.text or "")
-                if clean_match:
-                    node_text = TextHandler(node_text.clean())
+        possible_targets = (
+            _iter_elements_with_text(self._root)
+            if first_match
+            else cast(List, _find_all_elements_with_spaces(self._root))
+        )
+        for element in possible_targets:
+            """Check if element matches given text otherwise, traverse the children tree and iterate"""
+            node_text = TextHandler(element.text or "")
+            if clean_match:
+                node_text = TextHandler(node_text.clean())
 
-                if not case_sensitive:
-                    node_text = TextHandler(node_text.lower())
+            if not case_sensitive:
+                node_text = TextHandler(node_text.lower())
 
-                matched = False
-                if partial:
-                    if text in node_text:
-                        matched = True
-                elif text == node_text:
-                    matched = True
+            matched = text in node_text if partial else text == node_text
+            if matched:
+                converted = self.__element_convertor(element)
+                if first_match:
+                    return converted
+                results.append(converted)
 
-                if matched:
-                    results.append(self.__element_convertor(element))
-
-                if first_match and results:
-                    # we got an element so we should stop
-                    break
-
-            if first_match:
-                if results:
-                    return results[0]
         return results
 
     @overload
@@ -1184,29 +1186,36 @@ class Selector(SelectorsGeneration):
             return Selectors()
 
         results = Selectors()
-
-        possible_targets = cast(List, _find_all_elements_with_spaces(self._root))
-        if possible_targets:
-            if isinstance(query, str):
+        if isinstance(query, str):
+            try:
                 query = re_compile(query, UNICODE if case_sensitive else UNICODE | IGNORECASE)
+            except re_error:
+                # Historically invalid patterns are ignored only when XPath finds
+                # no eligible text candidate. Keep that edge-case behavior without
+                # forcing valid first-match searches to materialize every candidate.
+                if _find_all_elements_with_spaces(self._root):
+                    raise
+                return results
 
-            for element in possible_targets:
-                """Check if element matches given regex otherwise, traverse the children tree and iterate"""
-                node_text = TextHandler(element.text or "")
-                if node_text.re(
-                    query,
-                    check_match=True,
-                    clean_match=clean_match,
-                    case_sensitive=case_sensitive,
-                ):
-                    results.append(self.__element_convertor(element))
+        possible_targets = (
+            _iter_elements_with_text(self._root)
+            if first_match
+            else cast(List, _find_all_elements_with_spaces(self._root))
+        )
+        for element in possible_targets:
+            """Check if element matches given regex otherwise, traverse the children tree and iterate"""
+            node_text = TextHandler(element.text or "")
+            if node_text.re(
+                query,
+                check_match=True,
+                clean_match=clean_match,
+                case_sensitive=case_sensitive,
+            ):
+                converted = self.__element_convertor(element)
+                if first_match:
+                    return converted
+                results.append(converted)
 
-                if first_match and results:
-                    # we got an element so we should stop
-                    break
-
-            if results and first_match:
-                return results[0]
         return results
 
 
