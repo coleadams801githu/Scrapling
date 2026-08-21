@@ -412,3 +412,11 @@ def test_regex_on_text(page):
     assert match == "10.99"
     match = element.text.re(r"(\d+)", replace_entities=False)
     assert len(match) == 2
+
+def test_find_returns_first_matching_element_without_changing_find_all():
+    """find() returns the first match while find_all() retains every match."""
+    page = Selector("<div class=\"item\">first</div><div class=\"item\">second</div>")
+
+    assert page.find("div", class_="item").text == "first"
+    assert [element.text for element in page.find_all("div", class_="item")] == ["first", "second"]
+
