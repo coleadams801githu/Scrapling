@@ -1,3 +1,4 @@
+import re
 import pickle
 import time
 import logging
@@ -118,6 +119,61 @@ class TestXPathSelectors:
 
 # Text Matching Tests
 class TestTextMatching:
+    @pytest.mark.parametrize(
+        ("method", "query"),
+        (
+            ("find_by_text", "target"),
+            ("find_by_regex", r"^target$"),
+        ),
+    )
+    def test_first_match_streams_candidates_in_document_order(self, method, query):
+        """First-match searches skip ineligible nodes and return the earliest direct-text match."""
+        page = Selector(
+            """
+            <main>
+                <!-- target -->
+                <div>   </div>
+                <section><span>not a match</span></section>
+                <p id="first">target</p>
+                <p id="second">target</p>
+            </main>
+            """
+        )
+
+        result = getattr(page, method)(query, first_match=True)
+
+        assert result.attrib["id"] == "first"
+
+    @pytest.mark.parametrize(
+        ("method", "query"),
+        (
+            ("find_by_text", "target"),
+            ("find_by_regex", r"^target$"),
+        ),
+    )
+    def test_all_match_searches_keep_existing_behavior(self, method, query):
+        """All-match searches continue returning every eligible match."""
+        page = Selector('<p id="first">target</p><p id="second">target</p>')
+
+        results = getattr(page, method)(query, first_match=False)
+
+        assert [element.attrib["id"] for element in results] == ["first", "second"]
+
+    @pytest.mark.parametrize("first_match", (True, False))
+    def test_invalid_regex_on_empty_tree_keeps_existing_behavior(self, first_match):
+        """Invalid patterns are not compiled when no eligible text candidate exists."""
+        result = Selector("<div>   </div>").find_by_regex("(", first_match=first_match)
+
+        assert len(result) == 0
+
+    @pytest.mark.parametrize("first_match", (True, False))
+    def test_comment_tail_preserves_xpath_candidate_behavior(self, first_match):
+        """A comment tail remains an eligible candidate even though element.text is empty."""
+        page = Selector("<p><!-- comment -->target</p>", keep_comments=True)
+
+        with pytest.raises(re.error):
+            page.find_by_regex("(", first_match=first_match)
+
     def test_text_search_wraps_only_matching_elements(self, page, monkeypatch):
         """Text searches should not allocate Selector wrappers for rejected candidates."""
         original_converter = Selector._Selector__element_convertor
