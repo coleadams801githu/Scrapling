@@ -98,6 +98,49 @@ class TestCSSSelectors:
         )
         assert len(in_stock_products) == 2
 
+    def test_bulk_results_bypass_public_constructor(self, monkeypatch):
+        """Already-parsed CSS/XPath results should not repeat public constructor work."""
+        page = Selector(
+            "<main>" + "".join(f'<p data-id="{index}">{index}</p>' for index in range(5000)) + "</main>",
+            url="https://example.com/catalog",
+        )
+        constructor_calls = 0
+        original_init = Selector.__init__
+
+        def counting_init(instance, *args, **kwargs):
+            nonlocal constructor_calls
+            constructor_calls += 1
+            return original_init(instance, *args, **kwargs)
+
+        monkeypatch.setattr(Selector, "__init__", counting_init)
+
+        css_results = page.css("p")
+        xpath_results = page.xpath(".//p")
+
+        assert constructor_calls == 0
+        assert len(css_results) == len(xpath_results) == 5000
+        assert css_results[123].text == xpath_results[123].text == "123"
+        assert css_results[123].attrib["data-id"] == "123"
+        assert css_results[123].url == "https://example.com/catalog"
+
+    def test_wrapped_text_nodes_keep_constructor_invariants(self):
+        """Text-node wrappers remain non-adaptive and do not inherit storage."""
+        storage = object()
+        page = Selector(
+            "<main><p data-id='1'>content</p></main>",
+            adaptive=True,
+            _storage=storage,
+        )
+
+        element = page.css("p")[0]
+        text_node = page.css("p::text")[0]
+
+        assert element._Selector__adaptive_enabled is True
+        assert element._storage is storage
+        assert text_node._Selector__adaptive_enabled is False
+        assert text_node._storage is None
+        assert text_node.text == "content"
+
 
 # XPath Selector Tests
 class TestXPathSelectors:
